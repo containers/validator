@@ -52,9 +52,10 @@ validate (const char *path, const char *relative_to)
                           opt_public_keys, &validate_error))
         {
           if (validate_error)
-            g_printerr ("Signature of '%s' is invalid: %s\n", path, validate_error->message);
+            g_printerr ("Signature of '%s' is invalid (as %s): %s\n", path, rel_path,
+                        validate_error->message);
           else
-            g_printerr ("Signature of '%s' is invalid\n", path);
+            g_printerr ("Signature of '%s' is invalid (as %s)\n", path, rel_path);
           return FALSE;
         }
 
