@@ -1,0 +1,29 @@
+name: Test
+
+on: [push, pull_request]
+
+permissions:
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: "Build"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Configure
+        run: ./autogen.sh && ./configure --prefix=/usr
+      - name: Build
+        run: make -j $(nproc) CFLAGS='-fsanitize=address -fsanitize=undefined'
+      - name: Unit tests
+        run: make check
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: install dependencies
+        run: sudo apt-get install -y clang-format
+      - name: check formatting
+        run: make -f Makefile.am clang-format
