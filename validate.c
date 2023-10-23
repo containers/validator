@@ -126,5 +126,5 @@ cmd_validate (int argc, char *argv[])
         }
     }
 
-  return res ? 0 : 1;
+  return res ? EXIT_SUCCESS : EXIT_FAILURE;
 }
