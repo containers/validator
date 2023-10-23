@@ -66,5 +66,6 @@ AC_SUBST(WARN_CFLAGS)
 
 AC_CONFIG_FILES([
 Makefile
+validator.spec
 ])
 AC_OUTPUT

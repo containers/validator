@@ -1,0 +1,32 @@
+Name:           validator
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        Tool to install and validate signed files
+
+License:        LGPL-2.1-or-later
+#URL:            
+Source0:        %{name}-%{version}.tar.xz
+
+BuildRequires:  gcc automake openssl-devel glib2-devel
+
+%description
+Tool to sign, validate and install files.
+
+%prep
+%autosetup
+
+%build
+%configure
+%make_build
+
+%install
+%make_install
+
+%files
+%license COPYING
+%doc README.md
+%{_bindir}/validator
+
+%changelog
+* Mon Oct 23 2023 Alexander Larsson <alexl@redhat.com>
+- Initial version
