@@ -111,7 +111,7 @@ cmd_validate (int argc, char *argv[])
           if (!opt_recursive)
             {
               g_printerr ("error: '%s' is a directory and not in recursive mode\n", path);
-              return EXIT_FAILURE;
+              res = FALSE;
             }
 
           if (!validate (path, opt_path_relative ? opt_path_relative : path))
