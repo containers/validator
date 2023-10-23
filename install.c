@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 static gboolean
-install (const char *path, const char *relative_to, const char *destination_dir)
+install (const char *path, const char *relative_to, const char *destination_dir, gboolean toplevel)
 {
   struct stat st;
   gboolean success = TRUE;
@@ -104,20 +104,24 @@ install (const char *path, const char *relative_to, const char *destination_dir)
         }
 
       g_autofree char *basename = g_path_get_basename (path);
-      g_autofree char *destination_subdir = g_build_filename (destination_dir, basename, NULL);
+      g_autofree char *destination_subdir
+          = g_build_filename (destination_dir, toplevel ? NULL : basename, NULL);
 
-      res = mkdir (destination_subdir, 0755);
-      if (res < 0)
+      if (!toplevel)
         {
-          if (errno != EEXIST)
+          res = mkdir (destination_subdir, 0755);
+          if (res < 0)
             {
-              g_printerr ("Can't create directory '%s': %s\n", destination_subdir,
-                          strerror (errno));
-              return FALSE;
+              if (errno != EEXIST)
+                {
+                  g_printerr ("Can't create directory '%s': %s\n", destination_subdir,
+                              strerror (errno));
+                  return FALSE;
+                }
             }
+          else
+            g_info ("Created directory '%s'", destination_subdir);
         }
-      else
-        g_info ("Created directory '%s'", destination_subdir);
 
       const char *child;
       while ((child = g_dir_read_name (dir)) != NULL)
@@ -126,7 +130,7 @@ install (const char *path, const char *relative_to, const char *destination_dir)
             continue; /* Skip existing signatures */
 
           g_autofree char *child_path = g_build_filename (path, child, NULL);
-          if (!install (child_path, relative_to, destination_subdir))
+          if (!install (child_path, relative_to, destination_subdir, FALSE))
             success = FALSE;
         }
     }
@@ -165,14 +169,14 @@ cmd_install (int argc, char *argv[])
               return EXIT_FAILURE;
             }
 
-          if (!install (path, opt_path_relative ? opt_path_relative : path, destination))
+          if (!install (path, opt_path_relative ? opt_path_relative : path, destination, TRUE))
             res = FALSE;
         }
       else
         {
           g_autofree char *dirname = g_path_get_dirname (path);
 
-          if (!install (path, dirname, destination))
+          if (!install (path, dirname, destination, TRUE))
             res = FALSE;
         }
     }
