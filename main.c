@@ -80,6 +80,12 @@ GOptionEntry install_entries[] = { { "recursive", 'r', 0, G_OPTION_ARG_NONE, &op
                                    },
                                    { NULL } };
 
+GOptionEntry blob_entries[] = { { "relative-to", 0, 0, G_OPTION_ARG_FILENAME, &opt_path_relative,
+                                  "Paths relative to this directory", NULL },
+                                { "path-prefix", 'p', 0, G_OPTION_ARG_FILENAME, &opt_path_prefix,
+                                  "Add prefix to relative paths", NULL },
+                                { NULL } };
+
 static void
 message_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message,
                  gpointer user_data)
@@ -220,6 +226,7 @@ static struct CommandInfo commands[] = {
   { "validate", validate_entries, COMMAND_PUBKEYS, cmd_validate, "validate FILE [FILE...]" },
   { "install", install_entries, COMMAND_PUBKEYS, cmd_install,
     "install SOURCE [SOURCE..] DESTINATION" },
+  { "blob", blob_entries, 0, cmd_blob, "blob FILE" },
 };
 
 static struct CommandInfo *
@@ -270,8 +277,10 @@ main (int argc, char *argv[])
       = g_option_context_new (command ? command->usage : "COMMAND ...");
 
   g_option_context_set_summary (context, "Available commands:\n"
-                                         "  sign\n"
-                                         "  validate\n");
+                                         "  sign         Sign files\n"
+                                         "  validate     Validate files\n"
+                                         "  install      Install validated files\n"
+                                         "  blob         Output blob for external signing\n");
   g_option_context_add_main_entries (context, global_entries, NULL);
 
   if (command != NULL)

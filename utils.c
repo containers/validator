@@ -4,6 +4,7 @@
 
 #include <openssl/err.h>
 #include <openssl/pem.h>
+#include <unistd.h>
 
 void
 free_keys (GList *keys)
@@ -147,7 +148,7 @@ load_pub_keys_from_dir (const char *key_dir, GList **out_keys, GError **error)
   return TRUE;
 }
 
-static guchar *
+guchar *
 make_sign_blob (const char *rel_path, int type, const guchar *content, gsize content_len,
                 gsize *out_size, GError **error)
 {
@@ -319,4 +320,27 @@ has_path_prefix (const char *str, const char *prefix)
       if (*str != '/' && *str != 0)
         return FALSE;
     }
+}
+
+int
+write_to_fd (int fd, const guchar *content, gsize len)
+{
+  gssize res;
+
+  while (len > 0)
+    {
+      res = write (fd, content, len);
+      if (res < 0 && errno == EINTR)
+        continue;
+      if (res <= 0)
+        {
+          if (res == 0) /* Unexpected short write, should not happen when writing to a file */
+            errno = ENOSPC;
+          return -1;
+        }
+      len -= res;
+      content += res;
+    }
+
+  return 0;
 }
