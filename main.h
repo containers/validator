@@ -15,6 +15,7 @@ extern EVP_PKEY *opt_private_key;
 
 int cmd_sign (int argc, char *argv[]);
 int cmd_validate (int argc, char *argv[]);
+int cmd_install (int argc, char *argv[]);
 
 void help_error (const char *error_msg_fmt, ...);
 char *opt_get_relative_path (const char *path, const char *relative_to);

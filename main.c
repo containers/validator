@@ -64,6 +64,22 @@ GOptionEntry validate_entries[]
           NULL },
         { NULL } };
 
+GOptionEntry install_entries[] = { { "recursive", 'r', 0, G_OPTION_ARG_NONE, &opt_recursive,
+                                     "Install files recursively", NULL },
+                                   { "path-prefix", 'p', 0, G_OPTION_ARG_FILENAME, &opt_path_prefix,
+                                     "Add prefix to validated path", NULL },
+                                   { "relative-to", 0, 0, G_OPTION_ARG_FILENAME, &opt_path_relative,
+                                     "Validate relative to this directory", NULL },
+                                   {
+                                       "force",
+                                       'f',
+                                       0,
+                                       G_OPTION_ARG_NONE,
+                                       &opt_force,
+                                       "Replace existing files",
+                                   },
+                                   { NULL } };
+
 static void
 message_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message,
                  gpointer user_data)
@@ -202,6 +218,8 @@ struct CommandInfo
 static struct CommandInfo commands[] = {
   { "sign", sign_entries, COMMAND_PRIVKEY, cmd_sign, "sign FILE [FILE...]" },
   { "validate", validate_entries, COMMAND_PUBKEYS, cmd_validate, "validate FILE [FILE...]" },
+  { "install", install_entries, COMMAND_PUBKEYS, cmd_install,
+    "install SOURCE [SOURCE..] DESTINATION" },
 };
 
 static struct CommandInfo *
