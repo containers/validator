@@ -8,3 +8,6 @@ AM_CFLAGS = $(DEPS_CFLAGS) $(WARN_CFLAGS) -I$(top_srcdir)/
 
 validator_SOURCES = main.c main.h utils.c utils.h sign.c validate.c install.c blob.c
 validator_LDADD =  $(DEPS_LIBS)
+
+check: $(builddir)/validator
+	./test.sh $(builddir)/validator
