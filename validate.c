@@ -121,7 +121,7 @@ cmd_validate (int argc, char *argv[])
         {
           g_autofree char *dirname = g_path_get_dirname (path);
 
-          if (!validate (path, dirname))
+          if (!validate (path, opt_path_relative ? opt_path_relative : dirname))
             res = FALSE;
         }
     }

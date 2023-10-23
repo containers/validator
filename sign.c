@@ -120,7 +120,7 @@ cmd_sign (int argc, char *argv[])
         {
           g_autofree char *dirname = g_path_get_dirname (path);
 
-          if (!sign (path, dirname))
+          if (!sign (path, opt_path_relative ? opt_path_relative : dirname))
             res = FALSE;
         }
     }
