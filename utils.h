@@ -21,6 +21,14 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (EVP_MD_CTX, EVP_MD_CTX_free)
   }))
 #endif
 
+static inline int
+steal_fd (int *fdp)
+{
+  int fd = *fdp;
+  *fdp = -1;
+  return fd;
+}
+
 static inline void
 close_fd (int *fdp)
 {
@@ -28,7 +36,7 @@ close_fd (int *fdp)
 
   g_assert (fdp);
 
-  int fd = g_steal_fd (fdp);
+  int fd = steal_fd (fdp);
   if (fd >= 0)
     {
       errsv = errno;
@@ -36,14 +44,6 @@ close_fd (int *fdp)
         g_assert (errno != EBADF);
       errno = errsv;
     }
-}
-
-static inline int
-steal_fd (int *fdp)
-{
-  int fd = *fdp;
-  *fdp = -1;
-  return fd;
 }
 
 #define autofd __attribute__ ((cleanup (close_fd)))
