@@ -21,7 +21,43 @@
 #include "config.h"
 #include "main.h"
 
+#include <fcntl.h>
 #include <unistd.h>
+
+static gboolean
+replace_file (const char *destination_file, int content_fd, GError **error)
+{
+  g_autofree gchar *destination_file_tmp = g_strdup_printf ("%s.XXXXXX", destination_file);
+
+  errno = 0;
+  autofd int tmp_fd = g_mkstemp_full (destination_file_tmp, O_RDWR, 0644);
+  if (tmp_fd == -1)
+    {
+      g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (errno),
+                   "Can't open tempfile for '%s': %s\n", destination_file, strerror (errno));
+      return FALSE;
+    }
+
+  int res = copy_fd (content_fd, tmp_fd);
+  if (res < 0)
+    {
+      g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (errno),
+                   "Can't write to '%s': %s\n", destination_file_tmp, strerror (errno));
+      (void)unlink (destination_file_tmp);
+      return FALSE;
+    }
+
+  res = rename (destination_file_tmp, destination_file);
+  if (res < 0)
+    {
+      g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (errno), "Can't create '%s': %s\n",
+                   destination_file, strerror (errno));
+      (void)unlink (destination_file_tmp);
+      return FALSE;
+    }
+
+  return TRUE;
+}
 
 static gboolean
 install (const char *path, const char *relative_to, const char *destination_dir, gboolean toplevel)
@@ -56,7 +92,8 @@ install (const char *path, const char *relative_to, const char *destination_dir,
 
       g_autofree guchar *content = NULL;
       gsize content_len = 0;
-      if (!load_file_data_for_sign (path, &st, NULL, &content, &content_len, &error))
+      autofd int content_fd = -1;
+      if (!load_file_data_for_sign (path, &st, NULL, &content, &content_len, &content_fd, &error))
         {
           g_printerr ("Failed to load '%s': %s\n", path, error->message);
           return FALSE;
@@ -108,13 +145,16 @@ install (const char *path, const char *relative_to, const char *destination_dir,
         }
       else
         {
-          if (!g_file_set_contents_full (destination_file, (char *)content, content_len,
-                                         G_FILE_SET_CONTENTS_CONSISTENT, 0644, &error))
+          g_assert (content_fd != -1);
+
+          g_autoptr (GError) replace_error = NULL;
+          if (!replace_file (destination_file, content_fd, &replace_error))
             {
-              g_printerr ("Can't write '%s': %s\n", destination_file, error->message);
+              g_printerr ("%s\n", replace_error->message);
               return FALSE;
             }
         }
+
       g_info ("Installed file '%s'", destination_file);
     }
   else if (type == S_IFDIR)

@@ -54,7 +54,7 @@ validate (const char *path, const char *relative_to)
 
       g_autofree guchar *content = NULL;
       gsize content_len = 0;
-      if (!load_file_data_for_sign (path, &st, NULL, &content, &content_len, &error))
+      if (!load_file_data_for_sign (path, &st, NULL, &content, &content_len, NULL, &error))
         {
           g_printerr ("Failed to load '%s': %s\n", path, error->message);
           return FALSE;

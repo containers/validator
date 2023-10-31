@@ -110,10 +110,10 @@ or configure ostree with [transient /etc](https://ostreedev.github.io/ostree/man
 # Signature details
 
 The data signed is a blob comprised of the type, the relative path of
-the file, and the content of the file, or the symlink target. The
-Ed25519 signature of this blob is then put next to the original file
-with the suffix `.sig`.  In addition, the signature files have an 8
-byte header containing the bytes "VALIDTR\001".
+the file, and the sha512 content of the file, or the symlink
+target. The Ed25519 signature of this blob is then put next to the
+original file with the suffix `.sig`.  In addition, the signature
+files have an 8 byte header containing the bytes "VALIDTR\001".
 
 Signatures can be generated using `validator sign`, such as:
 ```
