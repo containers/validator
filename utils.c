@@ -22,6 +22,7 @@
 
 #include "utils.h"
 
+#include <fcntl.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <unistd.h>
@@ -366,9 +367,7 @@ write_to_fd (int fd, const guchar *content, gsize len)
 
   while (len > 0)
     {
-      res = write (fd, content, len);
-      if (res < 0 && errno == EINTR)
-        continue;
+      res = TEMP_FAILURE_RETRY (write (fd, content, len));
       if (res <= 0)
         {
           if (res == 0) /* Unexpected short write, should not happen when writing to a file */
@@ -377,6 +376,26 @@ write_to_fd (int fd, const guchar *content, gsize len)
         }
       len -= res;
       content += res;
+    }
+
+  return 0;
+}
+
+int
+copy_fd (int from_fd, int to_fd)
+{
+  while (TRUE)
+    {
+      guchar buf[16 * 1024];
+      gssize n = TEMP_FAILURE_RETRY (read (from_fd, buf, sizeof (buf)));
+      if (n < 0)
+        return -1;
+
+      if (n == 0) /* EOF */
+        break;
+
+      if (write_to_fd (to_fd, buf, (size_t)n) < 0)
+        return -1;
     }
 
   return 0;

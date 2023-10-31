@@ -10,6 +10,17 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (FILE, fclose)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (EVP_PKEY, EVP_PKEY_free)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (EVP_MD_CTX, EVP_MD_CTX_free)
 
+#ifndef TEMP_FAILURE_RETRY
+#define TEMP_FAILURE_RETRY(expression) \
+  (__extension__ ({ \
+    long int __result; \
+    do \
+      __result = (long int)(expression); \
+    while (__result == -1L && errno == EINTR); \
+    __result; \
+  }))
+#endif
+
 static inline void
 close_fd (int *fdp)
 {
@@ -53,3 +64,4 @@ gboolean sign_data (int type, const char *rel_path, const guchar *data, gsize da
 gboolean load_file_data_for_sign (const char *path, struct stat *st, int *type_out,
                                   guchar **content_out, gsize *content_len_out, GError **error);
 int write_to_fd (int fd, const guchar *content, gsize len);
+int copy_fd (int from_fd, int to_fd);
