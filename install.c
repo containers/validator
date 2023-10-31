@@ -92,7 +92,13 @@ install (const char *path, const char *relative_to, const char *destination_dir,
 
       if (type == S_IFLNK)
         {
-          (void)unlink (destination_file);
+          res = unlink (destination_file);
+          if (res < 0 && errno != ENOENT)
+            {
+              g_printerr ("Can't remove old symlink '%s': %s\n", destination_file,
+                          strerror (errno));
+              return FALSE;
+            }
           res = symlink ((char *)content, destination_file);
           if (res < 0)
             {
