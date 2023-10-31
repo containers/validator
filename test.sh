@@ -1,6 +1,9 @@
 #!/bin/bash
 
-VALIDATOR=$1
+BUILDDIR=$1
+SRCDIR=$2
+VALIDATOR=$BUILDDIR/validator
+ASSETS=$SRCDIR/test-assets
 
 set -e
 
@@ -195,5 +198,10 @@ assert_not_has_file $COPY/file2.txt
 assert_has_file $COPY/symlink1
 assert_has_file $COPY/dir/file3.txt
 assert_not_has_file $COPY/dir/symlink2
+
+HEADER Compatible with existing keys/signatures
+# NOTE: Update this with:./validator sign -rf --key=test-assets/secret.pem --relative-to=test-assets/content test-assets/content
+
+$VALIDATOR validate -r --key=$ASSETS/public.der $ASSETS/content
 
 echo ALL TESTS OK!
