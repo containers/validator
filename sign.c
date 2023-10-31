@@ -130,7 +130,7 @@ cmd_sign (int argc, char *argv[])
           if (!opt_recursive)
             {
               g_printerr ("error: '%s' is a directory and not in recursive mode\n", path);
-              res = FALSE;
+              return EXIT_FAILURE;
             }
 
           if (!sign (path, opt_path_relative ? opt_path_relative : path))
