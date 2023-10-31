@@ -176,18 +176,21 @@ make_sign_blob (const char *rel_path, int type, const guchar *content, gsize con
   gsize to_sign_len = 1 + rel_path_len + content_len;
   g_autofree guchar *to_sign = g_malloc (to_sign_len);
 
+  guchar *dst = to_sign;
   if (type == S_IFREG)
-    to_sign[0] = 0;
+    *dst++ = 0;
   else if (type == S_IFLNK)
-    to_sign[0] = 1;
+    *dst++ = 1;
   else
     {
       g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Unsupported file type");
       return NULL;
     }
 
-  memcpy (to_sign + 1, rel_path, rel_path_len);
-  memcpy (to_sign + 1 + rel_path_len, content, content_len);
+  memcpy (dst, rel_path, rel_path_len);
+  dst += rel_path_len;
+  memcpy (dst, content, content_len);
+  dst += content_len;
 
   *out_size = to_sign_len;
   return g_steal_pointer (&to_sign);
