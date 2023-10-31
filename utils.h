@@ -10,6 +10,33 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (FILE, fclose)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (EVP_PKEY, EVP_PKEY_free)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (EVP_MD_CTX, EVP_MD_CTX_free)
 
+static inline void
+close_fd (int *fdp)
+{
+  int errsv;
+
+  g_assert (fdp);
+
+  int fd = g_steal_fd (fdp);
+  if (fd >= 0)
+    {
+      errsv = errno;
+      if (close (fd) < 0)
+        g_assert (errno != EBADF);
+      errno = errsv;
+    }
+}
+
+static inline int
+steal_fd (int *fdp)
+{
+  int fd = *fdp;
+  *fdp = -1;
+  return fd;
+}
+
+#define autofd __attribute__ ((cleanup (close_fd)))
+
 void oom (void);
 gboolean has_path_prefix (const char *str, const char *prefix);
 void free_keys (GList *keys);
