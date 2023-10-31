@@ -173,7 +173,7 @@ make_sign_blob (const char *rel_path, int type, const guchar *content, gsize con
                 gsize *out_size, GError **error)
 {
   gsize rel_path_len = strlen (rel_path);
-  gsize to_sign_len = 1 + rel_path_len + content_len;
+  gsize to_sign_len = 1 + rel_path_len + 1 + content_len;
   g_autofree guchar *to_sign = g_malloc (to_sign_len);
 
   guchar *dst = to_sign;
@@ -189,6 +189,7 @@ make_sign_blob (const char *rel_path, int type, const guchar *content, gsize con
 
   memcpy (dst, rel_path, rel_path_len);
   dst += rel_path_len;
+  *dst++ = 0;
   memcpy (dst, content, content_len);
   dst += content_len;
 
