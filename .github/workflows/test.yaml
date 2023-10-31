@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Configure
-        run: ./autogen.sh && ./configure --prefix=/usr
+        run: ./autogen.sh --prefix=/usr
       - name: Build
         run: make -j $(nproc) CFLAGS='-fsanitize=address -fsanitize=undefined'
       - name: Unit tests
