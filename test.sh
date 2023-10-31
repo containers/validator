@@ -1,7 +1,7 @@
 #!/bin/bash
 
-VALIDATOR=$BUILDDIR/validator
-ASSETS=$SRCDIR/test-assets
+VALIDATOR=${BUILDDIR:-.}/validator
+ASSETS=${SRCDIR:-.}/test-assets
 
 set -e
 
@@ -25,6 +25,12 @@ assert_not_has_file () {
 
 assert_has_dir () {
     test -d "$1" || fatal "Couldn't find '$1'"
+}
+
+assert_not_has_dir () {
+    if test -d "$1"; then
+        fatal "Dir '$1' exists"
+    fi
 }
 
 # Dump ls -al + file contents to stderr, then fatal()
@@ -67,7 +73,7 @@ genkeys () {
 gencontent () {
     DIR=$1
     rm -rf $DIR
-    mkdir -p $DIR/dir
+    mkdir -p $DIR/dir $DIR/unused
     echo FILEDATA1 > $DIR/file1.txt
     echo FILEDATA2 > $DIR/file2.txt
     ln -s file1.txt  $DIR/symlink1
@@ -182,6 +188,9 @@ assert_has_file $COPY/symlink1
 assert_has_file $COPY/dir/file3.txt
 cmp $CONTENT/dir/file3.txt $COPY/dir/file3.txt
 assert_has_file $COPY/dir/symlink2
+
+# Dir with no validated file in should not be created
+assert_not_has_dir $COPY/unused
 
 HEADER Partial install
 rm -rf $COPY

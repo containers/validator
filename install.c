@@ -127,6 +127,12 @@ install (const char *path, const char *relative_to, const char *destination_dir,
           return TRUE;
         }
 
+      if (g_mkdir_with_parents (destination_dir, 0755) < 0)
+        {
+          g_printerr ("Unable to create dir '%s': %s", destination_file, strerror (errno));
+          return FALSE;
+        }
+
       if (type == S_IFLNK)
         {
           res = unlink (destination_file);
@@ -173,22 +179,6 @@ install (const char *path, const char *relative_to, const char *destination_dir,
       g_autofree char *basename = g_path_get_basename (path);
       g_autofree char *destination_subdir
           = g_build_filename (destination_dir, toplevel ? NULL : basename, NULL);
-
-      if (!toplevel)
-        {
-          res = mkdir (destination_subdir, 0755);
-          if (res < 0)
-            {
-              if (errno != EEXIST)
-                {
-                  g_printerr ("Can't create directory '%s': %s\n", destination_subdir,
-                              strerror (errno));
-                  return FALSE;
-                }
-            }
-          else
-            g_info ("Created directory '%s'", destination_subdir);
-        }
 
       const char *child;
       while ((child = g_dir_read_name (dir)) != NULL)
