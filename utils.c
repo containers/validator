@@ -201,9 +201,19 @@ gboolean
 validate_data (const char *rel_path, int type, guchar *content, gsize content_len, char *sig,
                gsize sig_size, GList *pub_keys, GError **error)
 {
+  if (sig_size < VALIDATOR_SIGNATURE_MAGIC_LEN
+      || memcmp (sig, VALIDATOR_SIGNATURE_MAGIC, VALIDATOR_SIGNATURE_MAGIC_LEN) != 0)
+    {
+      g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_INVAL, "Invalid signature");
+      return FALSE;
+    }
+  /* Skip past header */
+  sig += VALIDATOR_SIGNATURE_MAGIC_LEN;
+  sig_size -= VALIDATOR_SIGNATURE_MAGIC_LEN;
+
   gsize to_sign_len;
   g_autofree guchar *to_sign
-      = make_sign_blob (rel_path, type, content, content_len, &to_sign_len, NULL);
+      = make_sign_blob (rel_path, type, content, content_len, &to_sign_len, error);
   if (to_sign == NULL)
     return FALSE;
 
@@ -304,12 +314,15 @@ sign_data (int type, const char *rel_path, const guchar *content, gsize content_
   if (EVP_DigestSign (ctx, NULL, &signature_len, to_sign, to_sign_len) == 0)
     return fail_ssl (error, "Error getting signature size");
 
-  g_autofree guchar *signature = g_malloc (signature_len);
-  if (EVP_DigestSign (ctx, signature, &signature_len, to_sign, to_sign_len) == 0)
+  g_autofree guchar *signature = g_malloc (VALIDATOR_SIGNATURE_MAGIC_LEN + signature_len);
+  memcpy (signature, VALIDATOR_SIGNATURE_MAGIC, VALIDATOR_SIGNATURE_MAGIC_LEN);
+  if (EVP_DigestSign (ctx, signature + VALIDATOR_SIGNATURE_MAGIC_LEN, &signature_len, to_sign,
+                      to_sign_len)
+      == 0)
     return fail_ssl (error, "Error signing data");
 
   *signature_out = g_steal_pointer (&signature);
-  *signature_len_out = signature_len;
+  *signature_len_out = VALIDATOR_SIGNATURE_MAGIC_LEN + signature_len;
 
   return TRUE;
 }
