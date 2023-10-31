@@ -175,9 +175,12 @@ $VALIDATOR sign -f -r --key=$SECKEY $CONTENT
 $VALIDATOR install -r --key=$PUBKEY $CONTENT $COPY
 
 assert_has_file $COPY/file1.txt
+cmp $CONTENT/file1.txt $COPY/file1.txt
 assert_has_file $COPY/file2.txt
+cmp $CONTENT/file2.txt $COPY/file2.txt
 assert_has_file $COPY/symlink1
 assert_has_file $COPY/dir/file3.txt
+cmp $CONTENT/dir/file3.txt $COPY/dir/file3.txt
 assert_has_file $COPY/dir/symlink2
 
 HEADER Partial install
