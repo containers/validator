@@ -1,6 +1,9 @@
 #!/bin/bash
 
-VALIDATOR=$1
+BUILDDIR=$1
+SRCDIR=$2
+VALIDATOR=$BUILDDIR/validator
+ASSETS=$SRCDIR/test-assets
 
 set -e
 
@@ -141,9 +144,12 @@ $VALIDATOR sign -f -r --key=$SECKEY $CONTENT
 $VALIDATOR validate -r --key=$PUBKEY $CONTENT
 
 HEADER Externally signed blob gives same result
+echo -n  $'VALIDTR\001' > $TMPDIR/sig_header
 for i in file1.txt file2.txt symlink1 dir/file3.txt dir/symlink2  ; do
     $VALIDATOR blob --relative-to=$CONTENT $CONTENT/$i > $TMPDIR/blob
-    openssl pkeyutl -sign -inkey $SECKEY -rawin -in $TMPDIR/blob -out $TMPDIR/blob.sig
+    openssl pkeyutl -sign -inkey $SECKEY -rawin -in $TMPDIR/blob -out $TMPDIR/blob.rawsig
+    echo -n  $'VALIDTR\001' > $TMPDIR/blob.sig
+    cat $TMPDIR/sig_header $TMPDIR/blob.rawsig > $TMPDIR/blob.sig
     cmp $CONTENT/$i.sig $TMPDIR/blob.sig
 done
 
@@ -195,5 +201,10 @@ assert_not_has_file $COPY/file2.txt
 assert_has_file $COPY/symlink1
 assert_has_file $COPY/dir/file3.txt
 assert_not_has_file $COPY/dir/symlink2
+
+HEADER Compatible with existing keys/signatures
+# NOTE: Update this with:./validator sign -rf --key=test-assets/secret.pem --relative-to=test-assets/content test-assets/content
+
+$VALIDATOR validate -r --key=$ASSETS/public.der $ASSETS/content
 
 echo ALL TESTS OK!

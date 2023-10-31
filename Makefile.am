@@ -10,7 +10,7 @@ validator_SOURCES = main.c main.h utils.c utils.h sign.c validate.c install.c bl
 validator_LDADD =  $(DEPS_LIBS)
 
 check: $(builddir)/validator
-	$(srcdir)/test.sh $(builddir)/validator
+	$(srcdir)/test.sh $(builddir) $(top_srcdir)
 
 EXTRA_DIST=\
 	validator.spec.in \

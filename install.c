@@ -92,7 +92,13 @@ install (const char *path, const char *relative_to, const char *destination_dir,
 
       if (type == S_IFLNK)
         {
-          (void)unlink (destination_file);
+          res = unlink (destination_file);
+          if (res < 0 && errno != ENOENT)
+            {
+              g_printerr ("Can't remove old symlink '%s': %s\n", destination_file,
+                          strerror (errno));
+              return FALSE;
+            }
           res = symlink ((char *)content, destination_file);
           if (res < 0)
             {
@@ -102,7 +108,8 @@ install (const char *path, const char *relative_to, const char *destination_dir,
         }
       else
         {
-          if (!g_file_set_contents (destination_file, (char *)content, content_len, &error))
+          if (!g_file_set_contents_full (destination_file, (char *)content, content_len,
+                                         G_FILE_SET_CONTENTS_CONSISTENT, 0644, &error))
             {
               g_printerr ("Can't write '%s': %s\n", destination_file, error->message);
               return FALSE;
