@@ -46,7 +46,7 @@ cmd_blob (int argc, char *argv[])
   int type;
   g_autofree guchar *content = NULL;
   gsize content_len = 0;
-  if (!load_file_data_for_sign (path, NULL, &type, &content, &content_len, &error))
+  if (!load_file_data_for_sign (path, NULL, &type, &content, &content_len, NULL, &error))
     {
       g_printerr ("Failed to load '%s': %s\n", path, error->message);
       return EXIT_FAILURE;

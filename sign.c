@@ -49,7 +49,7 @@ sign (const char *path, const char *relative_to)
       gsize content_len = 0;
 
       g_autoptr (GError) error = NULL;
-      if (!load_file_data_for_sign (path, &st, NULL, &content, &content_len, &error))
+      if (!load_file_data_for_sign (path, &st, NULL, &content, &content_len, NULL, &error))
         {
           g_printerr ("Failed to read file '%s': %s\n", path, error->message);
           return FALSE;

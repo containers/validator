@@ -62,6 +62,7 @@ gboolean sign_data (int type, const char *rel_path, const guchar *data, gsize da
                     EVP_PKEY *pkey, guchar **signature_out, gsize *signature_len_out,
                     GError **error);
 gboolean load_file_data_for_sign (const char *path, struct stat *st, int *type_out,
-                                  guchar **content_out, gsize *content_len_out, GError **error);
+                                  guchar **content_out, gsize *content_len_out, int *fd_out,
+                                  GError **error);
 int write_to_fd (int fd, const guchar *content, gsize len);
 int copy_fd (int from_fd, int to_fd);

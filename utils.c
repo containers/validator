@@ -244,9 +244,72 @@ validate_data (const char *rel_path, int type, guchar *content, gsize content_le
   return valid;
 }
 
+static char *
+sha512_file (const char *path, gsize *digest_len_out, int *fd_out, GError **error)
+{
+  autofd int fd = open (path, O_RDONLY);
+  if (fd < 0)
+    {
+      g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (errno), "Can't open %s: %s", path,
+                   strerror (errno));
+      return NULL;
+    }
+
+  g_autoptr (EVP_MD_CTX) ctx = EVP_MD_CTX_new ();
+  if (!ctx)
+    {
+      fail_ssl (error, "Can't init context");
+      return NULL;
+    }
+
+  if (EVP_DigestInit_ex (ctx, EVP_sha512 (), NULL) == 0)
+    {
+      fail_ssl (error, "Can't initialize sha512 operation");
+      return NULL;
+    }
+
+  guchar buf[16 * 1024];
+  while (TRUE)
+    {
+      ssize_t res = read (fd, buf, sizeof (buf));
+      if (res < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (errno), "Can't read %s: %s",
+                       path, strerror (errno));
+          return NULL;
+        }
+      else if (res == 0)
+        break;
+
+      if (EVP_DigestUpdate (ctx, buf, res) == 0)
+        {
+          fail_ssl (error, "Can't compute sha512 operation");
+          return NULL;
+        }
+    }
+
+  guint digest_len = EVP_MD_CTX_size (ctx);
+  g_autofree char *digest = g_malloc (digest_len);
+  if (EVP_DigestFinal_ex (ctx, (guchar *)digest, &digest_len) == 0)
+    {
+      fail_ssl (error, "Can't compute sha512 operation");
+      return NULL;
+    }
+
+  if (fd_out)
+    {
+      lseek (fd, 0, SEEK_SET);
+      *fd_out = steal_fd (&fd);
+    }
+  *digest_len_out = digest_len;
+  return g_steal_pointer (&digest);
+}
+
 gboolean
 load_file_data_for_sign (const char *path, struct stat *st, int *type_out, guchar **content_out,
-                         gsize *content_len_out, GError **error)
+                         gsize *content_len_out, int *fd_out, GError **error)
 {
 
   struct stat st_buf;
@@ -272,10 +335,12 @@ load_file_data_for_sign (const char *path, struct stat *st, int *type_out, gucha
 
   g_autofree char *content = NULL;
   gsize content_len = 0;
+  autofd int fd = -1;
 
   if (type == S_IFREG)
     {
-      if (!g_file_get_contents (path, &content, &content_len, error))
+      content = sha512_file (path, &content_len, fd_out ? &fd : NULL, error);
+      if (content == NULL)
         return FALSE;
     }
   else
@@ -286,6 +351,8 @@ load_file_data_for_sign (const char *path, struct stat *st, int *type_out, gucha
       content_len = strlen (content);
     }
 
+  if (fd_out)
+    *fd_out = steal_fd (&fd);
   if (type_out)
     *type_out = type;
   *content_out = (guchar *)g_steal_pointer (&content);
