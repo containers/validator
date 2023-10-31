@@ -35,16 +35,6 @@ cmd_blob (int argc, char *argv[])
   g_autofree char *path = g_canonicalize_filename (argv[1], NULL);
   g_autofree char *dirname = g_path_get_dirname (path);
 
-  struct stat st;
-  int res = lstat (path, &st);
-  if (res < 0)
-    {
-      g_printerr ("Can't access '%s': %s\n", path, strerror (errno));
-      return EXIT_FAILURE;
-    }
-
-  int type = st.st_mode & S_IFMT;
-
   g_autofree char *rel_path
       = opt_get_relative_path (path, opt_path_relative ? opt_path_relative : dirname);
   if (rel_path == NULL)
@@ -53,9 +43,10 @@ cmd_blob (int argc, char *argv[])
       return EXIT_FAILURE;
     }
 
+  int type;
   g_autofree guchar *content = NULL;
   gsize content_len = 0;
-  if (!load_file_data_for_sign (path, &st, NULL, &content, &content_len, &error))
+  if (!load_file_data_for_sign (path, NULL, &type, &content, &content_len, &error))
     {
       g_printerr ("Failed to load '%s': %s\n", path, error->message);
       return EXIT_FAILURE;
@@ -70,7 +61,7 @@ cmd_blob (int argc, char *argv[])
       return EXIT_FAILURE;
     }
 
-  res = write_to_fd (1, blob, blob_size);
+  int res = write_to_fd (1, blob, blob_size);
   if (res < 0)
     {
       g_printerr ("%s\n", strerror (errno));
