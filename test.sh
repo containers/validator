@@ -204,11 +204,19 @@ assert_has_file $COPY/dir/file3.txt
 assert_not_has_file $COPY/dir/symlink2
 
 HEADER Compatible with existing keys/signatures
-# NOTE: Update this with:./validator sign -rf --key=test-assets/secret.pem --relative-to=test-assets/content test-assets/content
 
 rm -rf $CONTENT/*
 gencontent $CONTENT
 cp -r $ASSETS/content/* $CONTENT
+
+# To update, uncomment this:
+# Update this with:./validator sign -rf --key=test-assets/secret.pem --relative-to=test-assets/content test-assets/content
+#
+# $VALIDATOR sign -fr --key=$ASSETS/secret.pem $CONTENT
+# cp -r $CONTENT/*.sig $ASSETS/content
+# cp -r $CONTENT/dir/*.sig $ASSETS/content/dir
+
+
 $VALIDATOR validate -r --key=$ASSETS/public.der $CONTENT
 
 echo ALL TESTS OK!
