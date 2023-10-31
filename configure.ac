@@ -2,6 +2,7 @@ AC_PREREQ([2.69])
 AC_INIT([validator], [0.1], [alexl@redhat.com])
 AC_CONFIG_SRCDIR([main.c])
 AC_CONFIG_HEADERS([config.h])
+AC_USE_SYSTEM_EXTENSIONS
 AC_SYS_LARGEFILE
 
 AM_INIT_AUTOMAKE([1.11.2 -Wno-portability foreign tar-ustar no-dist-gzip dist-xz subdir-objects])
