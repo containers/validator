@@ -165,6 +165,11 @@ install (const char *path, const char *relative_to, const char *destination_dir,
     }
   else if (type == S_IFDIR)
     {
+      /* NOTE: It is important that we don't actually create a target directory
+       * here until we have a validated source file in this directory, because
+       * otherwise that would allow the creation of arbitrary directory names
+       * without validation. */
+
       g_autoptr (GError) dir_error = NULL;
       g_autoptr (GDir) dir = g_dir_open (path, 0, &dir_error);
       if (dir == NULL)
