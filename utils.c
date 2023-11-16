@@ -467,3 +467,100 @@ copy_fd (int from_fd, int to_fd)
 
   return 0;
 }
+
+static gboolean
+is_notfound (GError *error)
+{
+  return g_error_matches (error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_KEY_NOT_FOUND)
+         || g_error_matches (error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_GROUP_NOT_FOUND);
+}
+
+gboolean
+keyfile_get_boolean_with_default (GKeyFile *keyfile, const char *section, const char *value,
+                                  gboolean default_value, gboolean *out_bool, GError **error)
+{
+  g_return_val_if_fail (keyfile != NULL, FALSE);
+  g_return_val_if_fail (section != NULL, FALSE);
+  g_return_val_if_fail (value != NULL, FALSE);
+
+  GError *temp_error = NULL;
+  gboolean ret_bool = g_key_file_get_boolean (keyfile, section, value, &temp_error);
+  if (temp_error)
+    {
+      if (is_notfound (temp_error))
+        {
+          g_clear_error (&temp_error);
+          ret_bool = default_value;
+        }
+      else
+        {
+          g_propagate_error (error, temp_error);
+          return FALSE;
+        }
+    }
+
+  *out_bool = ret_bool;
+  return TRUE;
+}
+
+gboolean
+keyfile_get_value_with_default (GKeyFile *keyfile, const char *section, const char *value,
+                                const char *default_value, char **out_value, GError **error)
+{
+  g_return_val_if_fail (keyfile != NULL, FALSE);
+  g_return_val_if_fail (section != NULL, FALSE);
+  g_return_val_if_fail (value != NULL, FALSE);
+
+  GError *temp_error = NULL;
+  g_autofree char *ret_value = g_key_file_get_value (keyfile, section, value, &temp_error);
+  if (temp_error)
+    {
+      if (is_notfound (temp_error))
+        {
+          g_clear_error (&temp_error);
+          g_assert (ret_value == NULL);
+          ret_value = g_strdup (default_value);
+        }
+      else
+        {
+          g_propagate_error (error, temp_error);
+          return FALSE;
+        }
+    }
+
+  *out_value = g_steal_pointer (&ret_value);
+  return TRUE;
+}
+
+gboolean
+keyfile_get_string_list_with_default (GKeyFile *keyfile, const char *section, const char *key,
+                                      char separator, char **default_value, char ***out_value,
+                                      GError **error)
+{
+  g_autoptr (GError) temp_error = NULL;
+
+  g_return_val_if_fail (keyfile != NULL, FALSE);
+  g_return_val_if_fail (section != NULL, FALSE);
+  g_return_val_if_fail (key != NULL, FALSE);
+
+  g_key_file_set_list_separator (keyfile, separator);
+
+  g_auto (GStrv) ret_value = g_key_file_get_string_list (keyfile, section, key, NULL, &temp_error);
+
+  if (temp_error)
+    {
+      if (is_notfound (temp_error))
+        {
+          g_clear_error (&temp_error);
+          ret_value = g_strdupv (default_value);
+        }
+      else
+        {
+          g_propagate_error (error, g_steal_pointer (&temp_error));
+          return FALSE;
+        }
+    }
+
+  *out_value = g_steal_pointer (&ret_value);
+  return TRUE;
+}
