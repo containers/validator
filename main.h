@@ -41,3 +41,5 @@ int cmd_blob (int argc, char *argv[]);
 void help_error (const char *error_msg_fmt, ...);
 char *opt_get_relative_path (const char *path, const char *relative_to,
                              const char *optional_path_prefix);
+
+GList *read_public_keys (const char **keys, const char **key_dirs);

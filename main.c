@@ -145,15 +145,14 @@ read_private_key (void)
     }
 }
 
-static void
-read_public_keys (void)
+GList *
+read_public_keys (const char **keys, const char **key_dirs)
 {
-  if (opt_keys == NULL && opt_key_dirs == NULL)
-    help_error ("No --key or --key-dirs argument given given");
+  GList *res = NULL;
 
-  for (int i = 0; opt_keys != NULL && opt_keys[i] != NULL; i++)
+  for (int i = 0; keys != NULL && keys[i] != NULL; i++)
     {
-      const char *key_path = opt_keys[i];
+      const char *key_path = keys[i];
       g_autoptr (GError) error = NULL;
       g_autoptr (EVP_PKEY) key = load_pub_key (key_path, &error);
       if (key == NULL)
@@ -162,12 +161,12 @@ read_public_keys (void)
           exit (EXIT_FAILURE);
         }
 
-      opt_public_keys = g_list_append (opt_public_keys, g_steal_pointer (&key));
+      res = g_list_append (res, g_steal_pointer (&key));
     }
 
-  for (int i = 0; opt_key_dirs != NULL && opt_key_dirs[i] != NULL; i++)
+  for (int i = 0; key_dirs != NULL && key_dirs[i] != NULL; i++)
     {
-      const char *key_dir_path = opt_key_dirs[i];
+      const char *key_dir_path = key_dirs[i];
 
       GList *dir_keys;
       g_autoptr (GError) error = NULL;
@@ -177,8 +176,10 @@ read_public_keys (void)
           exit (EXIT_FAILURE);
         }
 
-      opt_public_keys = g_list_concat (opt_public_keys, dir_keys);
+      res = g_list_concat (res, dir_keys);
     }
+
+  return res;
 }
 
 static const char *
@@ -336,7 +337,12 @@ main (int argc, char *argv[])
     read_private_key ();
 
   if (command->flags & COMMAND_PUBKEYS)
-    read_public_keys ();
+    {
+      if (opt_keys == NULL && opt_key_dirs == NULL)
+        help_error ("No --key or --key-dirs argument given given");
+
+      opt_public_keys = read_public_keys ((const char **)opt_keys, (const char **)opt_key_dirs);
+    }
 
   canonicalize_opts ();
 
