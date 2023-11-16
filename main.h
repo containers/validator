@@ -26,6 +26,8 @@ extern gboolean opt_force;
 extern char *opt_key;
 extern char **opt_keys;
 extern char **opt_key_dirs;
+extern char **opt_configs;
+extern char **opt_config_dirs;
 extern char *opt_path_prefix;
 extern char *opt_path_relative;
 

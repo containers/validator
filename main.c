@@ -32,9 +32,10 @@ gboolean opt_force;
 char *opt_key;
 char **opt_keys;
 char **opt_key_dirs;
+char **opt_configs;
+char **opt_config_dirs;
 char *opt_path_prefix;
 char *opt_path_relative;
-char *opt_config;
 static int opt_verbose;
 static gboolean opt_help;
 static gboolean opt_version;
@@ -85,21 +86,26 @@ GOptionEntry validate_entries[]
           NULL },
         { NULL } };
 
-GOptionEntry install_entries[] = { { "recursive", 'r', 0, G_OPTION_ARG_NONE, &opt_recursive,
-                                     "Install files recursively", NULL },
-                                   { "path-prefix", 'p', 0, G_OPTION_ARG_FILENAME, &opt_path_prefix,
-                                     "Add prefix to validated path", NULL },
-                                   { "relative-to", 0, 0, G_OPTION_ARG_FILENAME, &opt_path_relative,
-                                     "Validate relative to this directory", NULL },
-                                   {
-                                       "force",
-                                       'f',
-                                       0,
-                                       G_OPTION_ARG_NONE,
-                                       &opt_force,
-                                       "Replace existing files",
-                                   },
-                                   { NULL } };
+GOptionEntry install_entries[]
+    = { { "recursive", 'r', 0, G_OPTION_ARG_NONE, &opt_recursive, "Install files recursively",
+          NULL },
+        { "path-prefix", 'p', 0, G_OPTION_ARG_FILENAME, &opt_path_prefix,
+          "Add prefix to validated path", NULL },
+        { "relative-to", 0, 0, G_OPTION_ARG_FILENAME, &opt_path_relative,
+          "Validate relative to this directory", NULL },
+        { "config", 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_configs,
+          "Install options from this config file", "FILE" },
+        { "config-dir", 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_config_dirs,
+          "Directory of config files to install from", "FILE" },
+        {
+            "force",
+            'f',
+            0,
+            G_OPTION_ARG_NONE,
+            &opt_force,
+            "Replace existing files",
+        },
+        { NULL } };
 
 GOptionEntry blob_entries[] = { { "relative-to", 0, 0, G_OPTION_ARG_FILENAME, &opt_path_relative,
                                   "Paths relative to this directory", NULL },
@@ -338,7 +344,8 @@ main (int argc, char *argv[])
 
   if (command->flags & COMMAND_PUBKEYS)
     {
-      if (opt_keys == NULL && opt_key_dirs == NULL)
+      if (opt_keys == NULL && opt_key_dirs == NULL && opt_configs == NULL
+          && opt_config_dirs == NULL)
         help_error ("No --key or --key-dirs argument given given");
 
       opt_public_keys = read_public_keys ((const char **)opt_keys, (const char **)opt_key_dirs);

@@ -260,11 +260,114 @@ get_install_options_from_cmdline (InstallOptions *opt)
   opt->public_keys = opt_public_keys;
 }
 
+static void
+free_install_options (InstallOptions *opt)
+{
+  g_free (opt->path_relative);
+  g_free (opt->path_prefix);
+
+  free_keys (opt->public_keys);
+}
+
+static gboolean
+get_install_options_from_file (InstallOptions *opt, const char *config_path, char **destination_out,
+                               char ***sources_out)
+{
+  memset (opt, 0, sizeof (InstallOptions));
+
+  g_autoptr (GKeyFile) config = g_key_file_new ();
+
+  g_autoptr (GError) error = NULL;
+  if (!g_key_file_load_from_file (config, config_path, G_KEY_FILE_NONE, &error))
+    {
+      /* Ignore non-existing config files */
+      if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+        return TRUE;
+
+      g_printerr ("Can't load config file '%s': %s\n", config_path, error->message);
+      return FALSE;
+    }
+
+  g_autofree char *destination = g_key_file_get_string (config, "install", "destination", &error);
+  if (destination == NULL)
+    {
+      g_printerr ("Can't get destination from config file '%s': %s\n", config_path, error->message);
+      return FALSE;
+    }
+
+  g_auto (GStrv) sources = g_key_file_get_string_list (config, "install", "sources", NULL, &error);
+  if (sources == NULL)
+    {
+      g_printerr ("Can't get sources from config file '%s': %s\n", config_path, error->message);
+      return FALSE;
+    }
+
+  /* Default for force and recursive is TRUE, as it is more common */
+
+  if (!keyfile_get_boolean_with_default (config, "install", "recursive", TRUE, &opt->recursive,
+                                         &error))
+    {
+      g_printerr ("Can't parse recursive option from config file '%s': %s\n", config_path,
+                  error->message);
+      return FALSE;
+    }
+
+  if (!keyfile_get_boolean_with_default (config, "install", "force", TRUE, &opt->force, &error))
+    {
+      g_printerr ("Can't parse force option from config file '%s': %s\n", config_path,
+                  error->message);
+      return FALSE;
+    }
+
+  g_autofree char *path_relative = NULL;
+  if (!keyfile_get_value_with_default (config, "install", "path_relative", NULL, &path_relative,
+                                       &error))
+    {
+      g_printerr ("Can't parse path_relative option from config file '%s': %s\n", config_path,
+                  error->message);
+      return FALSE;
+    }
+
+  g_autofree char *path_prefix = NULL;
+  if (!keyfile_get_value_with_default (config, "install", "path_prefix", NULL, &path_prefix,
+                                       &error))
+    {
+      g_printerr ("Can't parse path_prefix option from config file '%s': %s\n", config_path,
+                  error->message);
+      return FALSE;
+    }
+
+  g_auto (GStrv) keys = NULL;
+  if (!keyfile_get_string_list_with_default (config, "install", "keys", ';', NULL, &keys, &error))
+    {
+      g_printerr ("Can't parse public_keys option from config file '%s': %s\n", config_path,
+                  error->message);
+      return FALSE;
+    }
+
+  g_auto (GStrv) key_dirs = NULL;
+  if (!keyfile_get_string_list_with_default (config, "install", "key_dirs", ';', NULL, &key_dirs,
+                                             &error))
+    {
+      g_printerr ("Can't parse public_keys option from config file '%s': %s\n", config_path,
+                  error->message);
+      return FALSE;
+    }
+
+  opt->public_keys = read_public_keys ((const char **)keys, (const char **)key_dirs);
+
+  opt->path_relative = g_steal_pointer (&path_relative);
+  opt->path_prefix = g_steal_pointer (&path_prefix);
+
+  *destination_out = g_steal_pointer (&destination);
+  *sources_out = g_steal_pointer (&sources);
+
+  return TRUE;
+}
+
 int
 cmd_install (int argc, char *argv[])
 {
-  g_autoptr (GError) error = NULL;
-
   gboolean res = TRUE;
 
   if (argc > 1)
@@ -283,6 +386,67 @@ cmd_install (int argc, char *argv[])
       g_ptr_array_add (sources, NULL);
 
       res &= install_for_config (&main_opt, (const char **)sources->pdata, destination);
+    }
+
+  for (gsize i = 0; opt_configs != NULL && opt_configs[i] != NULL; i++)
+    {
+      const char *config_file = opt_configs[i];
+
+      g_info ("Loading config file %s", config_file);
+
+      g_autofree char *destination = NULL;
+      g_auto (GStrv) sources = NULL;
+      InstallOptions opt;
+      if (!get_install_options_from_file (&opt, config_file, &destination, &sources))
+        {
+          res = FALSE;
+          continue;
+        }
+
+      if (destination)
+        res &= install_for_config (&opt, (const char **)sources, destination);
+
+      free_install_options (&opt);
+    }
+
+  for (gsize i = 0; opt_config_dirs != NULL && opt_config_dirs[i] != NULL; i++)
+    {
+      const char *config_dir = opt_config_dirs[i];
+      g_info ("Loading config files from %s", config_dir);
+
+      g_autoptr (GError) error = NULL;
+      g_autoptr (GDir) dir = g_dir_open (config_dir, 0, &error);
+      if (dir == NULL)
+        {
+          if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            continue;
+
+          g_printerr ("Can't enumerate config dir %s: %s", config_dir, error->message);
+          res = FALSE;
+          continue;
+        }
+
+      const char *filename;
+      while ((filename = g_dir_read_name (dir)) != NULL)
+        {
+          g_autofree char *config_file = g_build_filename (config_dir, filename, NULL);
+
+          g_info ("Loading config file %s", config_file);
+
+          g_autofree char *destination = NULL;
+          g_auto (GStrv) sources = NULL;
+          InstallOptions opt;
+          if (!get_install_options_from_file (&opt, config_file, &destination, &sources))
+            {
+              res = FALSE;
+              continue;
+            }
+
+          if (destination)
+            res &= install_for_config (&opt, (const char **)sources, destination);
+
+          free_install_options (&opt);
+        }
     }
 
   return res ? 0 : 1;
