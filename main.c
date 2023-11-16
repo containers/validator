@@ -34,6 +34,7 @@ char **opt_keys;
 char **opt_key_dirs;
 char *opt_path_prefix;
 char *opt_path_relative;
+char *opt_config;
 static int opt_verbose;
 static gboolean opt_help;
 static gboolean opt_version;
@@ -261,7 +262,7 @@ find_command (const char *name)
 }
 
 char *
-opt_get_relative_path (const char *path, const char *relative_to)
+opt_get_relative_path (const char *path, const char *relative_to, const char *optional_path_prefix)
 {
   if (!has_path_prefix (path, relative_to))
     return NULL;
@@ -270,8 +271,8 @@ opt_get_relative_path (const char *path, const char *relative_to)
   while (*rel_path == '/')
     rel_path++;
 
-  if (opt_path_prefix)
-    return g_build_filename (opt_path_prefix, rel_path, NULL);
+  if (optional_path_prefix)
+    return g_build_filename (optional_path_prefix, rel_path, NULL);
 
   return g_strdup (rel_path);
 }

@@ -35,8 +35,8 @@ cmd_blob (int argc, char *argv[])
   g_autofree char *path = g_canonicalize_filename (argv[1], NULL);
   g_autofree char *dirname = g_path_get_dirname (path);
 
-  g_autofree char *rel_path
-      = opt_get_relative_path (path, opt_path_relative ? opt_path_relative : dirname);
+  g_autofree char *rel_path = opt_get_relative_path (
+      path, opt_path_relative ? opt_path_relative : dirname, opt_path_prefix);
   if (rel_path == NULL)
     {
       g_printerr ("File '%s' not inside relative dir\n", path);

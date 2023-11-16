@@ -39,4 +39,5 @@ int cmd_install (int argc, char *argv[]);
 int cmd_blob (int argc, char *argv[]);
 
 void help_error (const char *error_msg_fmt, ...);
-char *opt_get_relative_path (const char *path, const char *relative_to);
+char *opt_get_relative_path (const char *path, const char *relative_to,
+                             const char *optional_path_prefix);

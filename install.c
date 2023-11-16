@@ -24,6 +24,15 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+typedef struct
+{
+  gboolean recursive;
+  gboolean force;
+  char *path_relative;
+  char *path_prefix;
+  GList *public_keys;
+} InstallOptions;
+
 static gboolean
 replace_file (const char *destination_file, int content_fd, GError **error)
 {
@@ -60,7 +69,8 @@ replace_file (const char *destination_file, int content_fd, GError **error)
 }
 
 static gboolean
-install (const char *path, const char *relative_to, const char *destination_dir, gboolean toplevel)
+install (InstallOptions *opt, const char *path, const char *relative_to,
+         const char *destination_dir, gboolean toplevel)
 {
   struct stat st;
   gboolean success = TRUE;
@@ -99,7 +109,7 @@ install (const char *path, const char *relative_to, const char *destination_dir,
           return FALSE;
         }
 
-      g_autofree char *rel_path = opt_get_relative_path (path, relative_to);
+      g_autofree char *rel_path = opt_get_relative_path (path, relative_to, opt->path_prefix);
       if (rel_path == NULL)
         {
           g_printerr ("File '%s' not inside relative dir\n", path);
@@ -108,7 +118,7 @@ install (const char *path, const char *relative_to, const char *destination_dir,
 
       g_autoptr (GError) validate_error = NULL;
       if (!validate_data (rel_path, type, content, content_len, signature, signature_len,
-                          opt_public_keys, &validate_error))
+                          opt->public_keys, &validate_error))
         {
           if (validate_error)
             g_printerr ("Signature of '%s' (as '%s') is invalid: %s\n", path, rel_path,
@@ -121,7 +131,7 @@ install (const char *path, const char *relative_to, const char *destination_dir,
       g_autofree char *basename = g_path_get_basename (path);
       g_autofree char *destination_file = g_build_filename (destination_dir, basename, NULL);
 
-      if (!opt_force && g_file_test (destination_file, G_FILE_TEST_EXISTS))
+      if (!opt->force && g_file_test (destination_file, G_FILE_TEST_EXISTS))
         {
           g_info ("File '%s' already exist, ignoring", destination_file);
           return TRUE;
@@ -192,7 +202,7 @@ install (const char *path, const char *relative_to, const char *destination_dir,
             continue; /* Skip existing signatures */
 
           g_autofree char *child_path = g_build_filename (path, child, NULL);
-          if (!install (child_path, relative_to, destination_subdir, FALSE))
+          if (!install (opt, child_path, relative_to, destination_subdir, FALSE))
             success = FALSE;
         }
     }
@@ -205,42 +215,74 @@ install (const char *path, const char *relative_to, const char *destination_dir,
   return success;
 }
 
-int
-cmd_install (int argc, char *argv[])
+static gboolean
+install_for_config (InstallOptions *opt, const char **sources, const char *destination)
 {
-  g_autoptr (GError) error = NULL;
-
-  if (argc == 1)
-    help_error ("No source files given");
-
-  if (argc == 2)
-    help_error ("No destination given");
-
-  const char *destination = argv[argc - 1];
-
   gboolean res = TRUE;
-  for (gsize i = 1; i < argc - 1; i++)
+  for (gsize i = 0; sources[i] != NULL; i++)
     {
-      g_autofree char *path = g_canonicalize_filename (argv[i], NULL);
+      g_autofree char *path = g_canonicalize_filename (sources[i], NULL);
 
       if (g_file_test (path, G_FILE_TEST_IS_DIR))
         {
-          if (!opt_recursive)
+          if (!opt->recursive)
             {
               g_printerr ("error: '%s' is a directory and not in recursive mode\n", path);
               return EXIT_FAILURE;
             }
 
-          if (!install (path, opt_path_relative ? opt_path_relative : path, destination, TRUE))
+          if (!install (opt, path, opt->path_relative ? opt->path_relative : path, destination,
+                        TRUE))
             res = FALSE;
         }
       else
         {
           g_autofree char *dirname = g_path_get_dirname (path);
 
-          if (!install (path, dirname, destination, TRUE))
+          /* TODO: Handle opt->path_relative here?? */
+          if (!install (opt, path, dirname, destination, TRUE))
             res = FALSE;
         }
+    }
+
+  return res;
+}
+
+static void
+get_install_options_from_cmdline (InstallOptions *opt)
+{
+  memset (opt, 0, sizeof (InstallOptions));
+
+  opt->recursive = opt_recursive;
+  opt->force = opt_force;
+  opt->path_relative = opt_path_relative;
+  opt->path_prefix = opt_path_prefix;
+  opt->public_keys = opt_public_keys;
+}
+
+int
+cmd_install (int argc, char *argv[])
+{
+  g_autoptr (GError) error = NULL;
+
+  gboolean res = TRUE;
+
+  if (argc > 1)
+    {
+      if (argc == 2)
+        help_error ("No destination given");
+
+      InstallOptions main_opt;
+      get_install_options_from_cmdline (&main_opt);
+
+      const char *destination = argv[argc - 1];
+
+      g_autoptr (GPtrArray) sources = g_ptr_array_new ();
+      for (gsize i = 1; i < argc - 1; i++)
+        g_ptr_array_add (sources, argv[i]);
+      g_ptr_array_add (sources, NULL);
+
+      res &= install_for_config (&main_opt, (const char **)sources->pdata, destination);
     }
 
   return res ? 0 : 1;
