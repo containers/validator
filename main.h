@@ -26,6 +26,8 @@ extern gboolean opt_force;
 extern char *opt_key;
 extern char **opt_keys;
 extern char **opt_key_dirs;
+extern char **opt_configs;
+extern char **opt_config_dirs;
 extern char *opt_path_prefix;
 extern char *opt_path_relative;
 
@@ -39,4 +41,7 @@ int cmd_install (int argc, char *argv[]);
 int cmd_blob (int argc, char *argv[]);
 
 void help_error (const char *error_msg_fmt, ...);
-char *opt_get_relative_path (const char *path, const char *relative_to);
+char *opt_get_relative_path (const char *path, const char *relative_to,
+                             const char *optional_path_prefix);
+
+GList *read_public_keys (const char **keys, const char **key_dirs);

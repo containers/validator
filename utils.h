@@ -66,3 +66,14 @@ gboolean load_file_data_for_sign (const char *path, struct stat *st, int *type_o
                                   GError **error);
 int write_to_fd (int fd, const guchar *content, gsize len);
 int copy_fd (int from_fd, int to_fd);
+
+gboolean keyfile_get_boolean_with_default (GKeyFile *keyfile, const char *section,
+                                           const char *value, gboolean default_value,
+                                           gboolean *out_bool, GError **error);
+gboolean keyfile_get_value_with_default (GKeyFile *keyfile, const char *section, const char *value,
+                                         const char *default_value, char **out_value,
+                                         GError **error);
+gboolean keyfile_get_string_list_with_default (GKeyFile *keyfile, const char *section,
+                                               const char *key, char separator,
+                                               char **default_value, char ***out_value,
+                                               GError **error);

@@ -32,6 +32,8 @@ gboolean opt_force;
 char *opt_key;
 char **opt_keys;
 char **opt_key_dirs;
+char **opt_configs;
+char **opt_config_dirs;
 char *opt_path_prefix;
 char *opt_path_relative;
 static int opt_verbose;
@@ -84,21 +86,26 @@ GOptionEntry validate_entries[]
           NULL },
         { NULL } };
 
-GOptionEntry install_entries[] = { { "recursive", 'r', 0, G_OPTION_ARG_NONE, &opt_recursive,
-                                     "Install files recursively", NULL },
-                                   { "path-prefix", 'p', 0, G_OPTION_ARG_FILENAME, &opt_path_prefix,
-                                     "Add prefix to validated path", NULL },
-                                   { "relative-to", 0, 0, G_OPTION_ARG_FILENAME, &opt_path_relative,
-                                     "Validate relative to this directory", NULL },
-                                   {
-                                       "force",
-                                       'f',
-                                       0,
-                                       G_OPTION_ARG_NONE,
-                                       &opt_force,
-                                       "Replace existing files",
-                                   },
-                                   { NULL } };
+GOptionEntry install_entries[]
+    = { { "recursive", 'r', 0, G_OPTION_ARG_NONE, &opt_recursive, "Install files recursively",
+          NULL },
+        { "path-prefix", 'p', 0, G_OPTION_ARG_FILENAME, &opt_path_prefix,
+          "Add prefix to validated path", NULL },
+        { "relative-to", 0, 0, G_OPTION_ARG_FILENAME, &opt_path_relative,
+          "Validate relative to this directory", NULL },
+        { "config", 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_configs,
+          "Install options from this config file", "FILE" },
+        { "config-dir", 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_config_dirs,
+          "Directory of config files to install from", "FILE" },
+        {
+            "force",
+            'f',
+            0,
+            G_OPTION_ARG_NONE,
+            &opt_force,
+            "Replace existing files",
+        },
+        { NULL } };
 
 GOptionEntry blob_entries[] = { { "relative-to", 0, 0, G_OPTION_ARG_FILENAME, &opt_path_relative,
                                   "Paths relative to this directory", NULL },
@@ -144,15 +151,14 @@ read_private_key (void)
     }
 }
 
-static void
-read_public_keys (void)
+GList *
+read_public_keys (const char **keys, const char **key_dirs)
 {
-  if (opt_keys == NULL && opt_key_dirs == NULL)
-    help_error ("No --key or --key-dirs argument given given");
+  GList *res = NULL;
 
-  for (int i = 0; opt_keys != NULL && opt_keys[i] != NULL; i++)
+  for (int i = 0; keys != NULL && keys[i] != NULL; i++)
     {
-      const char *key_path = opt_keys[i];
+      const char *key_path = keys[i];
       g_autoptr (GError) error = NULL;
       g_autoptr (EVP_PKEY) key = load_pub_key (key_path, &error);
       if (key == NULL)
@@ -161,12 +167,12 @@ read_public_keys (void)
           exit (EXIT_FAILURE);
         }
 
-      opt_public_keys = g_list_append (opt_public_keys, g_steal_pointer (&key));
+      res = g_list_append (res, g_steal_pointer (&key));
     }
 
-  for (int i = 0; opt_key_dirs != NULL && opt_key_dirs[i] != NULL; i++)
+  for (int i = 0; key_dirs != NULL && key_dirs[i] != NULL; i++)
     {
-      const char *key_dir_path = opt_key_dirs[i];
+      const char *key_dir_path = key_dirs[i];
 
       GList *dir_keys;
       g_autoptr (GError) error = NULL;
@@ -176,8 +182,10 @@ read_public_keys (void)
           exit (EXIT_FAILURE);
         }
 
-      opt_public_keys = g_list_concat (opt_public_keys, dir_keys);
+      res = g_list_concat (res, dir_keys);
     }
+
+  return res;
 }
 
 static const char *
@@ -261,7 +269,7 @@ find_command (const char *name)
 }
 
 char *
-opt_get_relative_path (const char *path, const char *relative_to)
+opt_get_relative_path (const char *path, const char *relative_to, const char *optional_path_prefix)
 {
   if (!has_path_prefix (path, relative_to))
     return NULL;
@@ -270,8 +278,8 @@ opt_get_relative_path (const char *path, const char *relative_to)
   while (*rel_path == '/')
     rel_path++;
 
-  if (opt_path_prefix)
-    return g_build_filename (opt_path_prefix, rel_path, NULL);
+  if (optional_path_prefix)
+    return g_build_filename (optional_path_prefix, rel_path, NULL);
 
   return g_strdup (rel_path);
 }
@@ -335,7 +343,13 @@ main (int argc, char *argv[])
     read_private_key ();
 
   if (command->flags & COMMAND_PUBKEYS)
-    read_public_keys ();
+    {
+      if (opt_keys == NULL && opt_key_dirs == NULL && opt_configs == NULL
+          && opt_config_dirs == NULL)
+        help_error ("No --key or --key-dirs argument given given");
+
+      opt_public_keys = read_public_keys ((const char **)opt_keys, (const char **)opt_key_dirs);
+    }
 
   canonicalize_opts ();
 

@@ -55,7 +55,7 @@ sign (const char *path, const char *relative_to)
           return FALSE;
         }
 
-      g_autofree char *rel_path = opt_get_relative_path (path, relative_to);
+      g_autofree char *rel_path = opt_get_relative_path (path, relative_to, opt_path_prefix);
       if (rel_path == NULL)
         {
           g_printerr ("File '%s' not inside relative dir\n", path);

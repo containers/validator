@@ -60,6 +60,7 @@ COPY=$TMPDIR/copy
 CONTENT=$TMPDIR/content
 SECKEY=$TMPDIR/secret.pem
 PUBDIR=$TMPDIR/keys/
+CONFIGDIR=$TMPDIR/config/
 PUBKEY=$PUBDIR/public.der
 
 $VALIDATOR --version > $TMPDIR/version
@@ -179,6 +180,52 @@ mkdir -p $COPY
 
 $VALIDATOR sign -f -r --key=$SECKEY $CONTENT
 $VALIDATOR install -r --key=$PUBKEY $CONTENT $COPY
+
+assert_has_file $COPY/file1.txt
+cmp $CONTENT/file1.txt $COPY/file1.txt
+assert_has_file $COPY/file2.txt
+cmp $CONTENT/file2.txt $COPY/file2.txt
+assert_has_file $COPY/symlink1
+assert_has_file $COPY/dir/file3.txt
+cmp $CONTENT/dir/file3.txt $COPY/dir/file3.txt
+assert_has_file $COPY/dir/symlink2
+
+# Dir with no validated file in should not be created
+assert_not_has_dir $COPY/unused
+
+HEADER "Install signed should succeed (config)"
+
+rm -rf $COPY
+mkdir -p $COPY
+
+mkdir -p $CONFIGDIR
+cat > $CONFIGDIR/test.conf <<- EOF
+[install]
+keys=$PUBKEY
+sources=$CONTENT
+destination=$COPY
+EOF
+cat $CONFIGDIR/test.conf 1>&2
+$VALIDATOR install --config=$CONFIGDIR/test.conf
+
+assert_has_file $COPY/file1.txt
+cmp $CONTENT/file1.txt $COPY/file1.txt
+assert_has_file $COPY/file2.txt
+cmp $CONTENT/file2.txt $COPY/file2.txt
+assert_has_file $COPY/symlink1
+assert_has_file $COPY/dir/file3.txt
+cmp $CONTENT/dir/file3.txt $COPY/dir/file3.txt
+assert_has_file $COPY/dir/symlink2
+
+# Dir with no validated file in should not be created
+assert_not_has_dir $COPY/unused
+
+HEADER "Install signed should succeed (configdir)"
+
+rm -rf $COPY
+mkdir -p $COPY
+
+$VALIDATOR install --config-dir=$CONFIGDIR
 
 assert_has_file $COPY/file1.txt
 cmp $CONTENT/file1.txt $COPY/file1.txt
