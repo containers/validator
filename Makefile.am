@@ -9,6 +9,19 @@ AM_CFLAGS = $(DEPS_CFLAGS) $(WARN_CFLAGS) -I$(top_srcdir)/
 validator_SOURCES = main.c main.h utils.c utils.h sign.c validate.c install.c blob.c
 validator_LDADD =  $(DEPS_LIBS)
 
+if BUILDOPT_DRACUT
+# Not using $(libdir) here is intentional, dracut modules go in prefix/lib
+dracutmoddir = $(prefix)/lib/dracut/modules.d/98validator
+dracutmod_SCRIPTS = dracut/module-setup.sh
+dracutmod_DATA = dracut/validator-boot.service
+
+install-exec-hook:
+	mkdir -p $(DESTDIR)$(prefix)/lib/validator/boot.d
+	mkdir -p $(DESTDIR)$(sysconfdir)/validator/boot.d
+	mkdir -p $(DESTDIR)$(prefix)/lib/validator/keys
+	mkdir -p $(DESTDIR)$(sysconfdir)/validator/keys
+endif
+
 AM_TESTS_ENVIRONMENT = \
 	BUILDDIR=$(builddir) \
 	SRCDIR=$(top_srcdir)
@@ -28,6 +41,8 @@ TEST_ASSETS=\
 	test-assets/secret.pem
 
 EXTRA_DIST=\
+	dracut/validator-boot.service \
+	dracut/module-setup.sh \
 	$(TEST_ASSETS) \
 	validator.spec.in \
 	validator.spec \

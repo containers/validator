@@ -38,6 +38,12 @@ AC_DEFUN([CC_CHECK_FLAGS_APPEND], [
   done
 ])
 
+AC_ARG_WITH(dracut,
+            AS_HELP_STRING([--with-dracut],
+                           [Install dracut module (default: yes)]),,
+              [with_dracut=yes])
+AM_CONDITIONAL(BUILDOPT_DRACUT, test x$with_dracut = xyes)
+
 AS_IF([echo "$CFLAGS" | grep -q -E -e '-Werror($| )'], [], [
 CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
   -pipe \
@@ -70,3 +76,11 @@ Makefile
 validator.spec
 ])
 AC_OUTPUT
+
+echo "
+    validator $VERSION
+    ===============
+
+
+    dracut:                                       $with_dracut
+"
