@@ -16,7 +16,9 @@ Tool to sign, validate and install files.
 %autosetup
 
 %build
-%configure --with-dracut
+%configure \
+           --with-dracut \
+           --enable-man
 %make_build
 
 %install
@@ -30,6 +32,7 @@ Tool to sign, validate and install files.
 %{_sysconfdir}/validator
 %dir %{_prefix}/lib/dracut/modules.d/98validator
 %{_prefix}/lib/dracut/modules.d/98validator/*
+%{_mandir}/man*/*
 
 %changelog
 * Mon Oct 23 2023 Alexander Larsson <alexl@redhat.com>
