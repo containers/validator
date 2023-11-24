@@ -133,6 +133,45 @@ Then any correctly signed files in /opt/extra-etc will be copied
 into /etc during the initramfs. This can include systemd units
 or any other kind of file in /etc.
 
+# Comparison to other tools
+
+There are many tools available to sign content (and validate
+signatures). For example:
+
+ * GnuPG (https://www.gnupg.org/gph/en/manual/x135.html)
+ * Signify (https://github.com/aperezdc/signify)
+ * Ssh (https://www.agwa.name/blog/post/ssh_signatures)
+ * OpenSSL commandline (https://www.zimuel.it/blog/sign-and-verify-a-file-using-openssl)
+
+Many of these are actually very similar to validator internally. For
+example, Validator calls the same OpenSSL library API as the OpenSSL
+commandline tools, and Signify uses exactly the same algorithm for the
+signatures. The main difference between Validator and these tools is
+the primary usecase.
+
+In general the workflow for all the above tools is that you have some
+sort of data, be it an email or a file and then a signature for it
+(either separate or the two could be combined). You trigger validation
+of the file and then you continue using the data. For example reading
+the mail or compiling a tarball. There is no particular workflow
+defined after validation, or any code to support it.
+
+For Validator, however the primary usecase is installing a (validated)
+file into the system, in a particular location (often /etc), with a
+particular name (filenames are critical to config files). To support
+this, Validator adds some extra functionallity (on top of the basic
+validation). First of all, it signs not just the content, but also the
+filename, as well as the file type (regular file vs
+symlink). Secondly, the primary operation is not "validate", but
+"install" which combines the validation of a source file with the
+operation that copies it into place. Third, validator ships with extra
+tools (such as the dracut module) to make it very easy to integrate
+file integration with system boot.
+
+So, if your usecase does not primarily involve installing validated
+files, you should probably look at these other tools. They are
+fantastic.
+
 # Signature details
 
 The data signed is a blob comprised of the type, the relative path of
