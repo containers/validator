@@ -1,0 +1,3 @@
+.PHONY: clang-format
+clang-format:
+	git ls-files '**.c' '**.h' | xargs clang-format -i

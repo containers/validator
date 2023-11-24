@@ -1,8 +1,6 @@
 bin_PROGRAMS = validator
 
-.PHONY: clang-format
-clang-format:
-	git ls-files '**.c' '**.h' | xargs clang-format -i
+include Makefile.clang
 
 AM_CFLAGS = $(DEPS_CFLAGS) $(WARN_CFLAGS) -I$(top_srcdir)/
 

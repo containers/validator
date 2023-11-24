@@ -26,4 +26,4 @@ jobs:
       - name: install dependencies
         run: sudo apt-get install -y clang-format
       - name: check formatting
-        run: make -f Makefile.am clang-format
+        run: make -f Makefile.clang clang-format
