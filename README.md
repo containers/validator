@@ -2,12 +2,13 @@
 
 Validator is a tool that allows you to sign a file, or a set of files,
 using a private (Ed25519) key, and then later install these files on
-another system if the signatures are valid. You can also validate the
-files directly.
+another system (if the signatures are valid). You can also validate
+the files directly.
 
-Validator also ships with a dracut module that makes it very easy
-to install additional files from the initramfs. For example, to add
-dynamic systemd units files to an otherwise read-only rootfs.
+Validator also ships with a dracut module that makes it very easy to
+install additional files from the initramfs. You can use this to , for
+example, add signed systemd units files to an otherwise read-only
+rootfs.
 
 # Trivial example
 
