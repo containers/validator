@@ -153,7 +153,6 @@ echo -n  $'VALIDTR\001' > $TMPDIR/sig_header
 for i in file1.txt file2.txt symlink1 dir/file3.txt dir/symlink2  ; do
     $VALIDATOR blob --relative-to=$CONTENT $CONTENT/$i > $TMPDIR/blob
     openssl pkeyutl -sign -inkey $SECKEY -rawin -in $TMPDIR/blob -out $TMPDIR/blob.rawsig
-    echo -n  $'VALIDTR\001' > $TMPDIR/blob.sig
     cat $TMPDIR/sig_header $TMPDIR/blob.rawsig > $TMPDIR/blob.sig
     cmp $CONTENT/$i.sig $TMPDIR/blob.sig
 done

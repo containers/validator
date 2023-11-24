@@ -1,0 +1,11 @@
+[Unit]
+Description=Run validator copy in initramfs
+DefaultDependencies=no
+ConditionPathExists=/etc/initrd-release
+After=initrd.target
+Before=initrd-switch-root.target
+
+[Service]
+Type=oneshot
+ExecStart=validator install --config-dir=/etc/validator/boot.d --config-dir=/usr/lib/validator/boot.d
+RemainAfterExit=yes

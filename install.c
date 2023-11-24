@@ -235,7 +235,7 @@ install_for_config (InstallOptions *opt, const char **sources, const char *desti
                         TRUE))
             res = FALSE;
         }
-      else
+      else if (g_file_test (path, G_FILE_TEST_IS_REGULAR))
         {
           g_autofree char *dirname = g_path_get_dirname (path);
 

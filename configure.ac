@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([validator], [0.2.1], [alexl@redhat.com])
+AC_INIT([validator], [0.2.2], [alexl@redhat.com])
 AC_CONFIG_SRCDIR([main.c])
 AC_CONFIG_HEADERS([config.h])
 AC_USE_SYSTEM_EXTENSIONS
@@ -38,6 +38,30 @@ AC_DEFUN([CC_CHECK_FLAGS_APPEND], [
   done
 ])
 
+AC_ARG_ENABLE(man,
+              [AS_HELP_STRING([--enable-man],
+                              [generate man pages [default=auto]])],,
+              enable_man=maybe)
+
+AS_IF([test "$enable_man" != no], [
+  AC_PATH_PROG([MD2MAN], [go-md2man])
+  AS_IF([test -z "$MD2MAN"], [
+    AS_IF([test "$enable_man" = yes], [
+      AC_MSG_ERROR([go-md2man is required for --enable-man])
+    ])
+    enable_man=no
+  ],[
+    enable_man=yes
+  ])
+])
+AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" != no)
+
+AC_ARG_WITH(dracut,
+            AS_HELP_STRING([--with-dracut],
+                           [Install dracut module (default: yes)]),,
+              [with_dracut=yes])
+AM_CONDITIONAL(BUILDOPT_DRACUT, test x$with_dracut = xyes)
+
 AS_IF([echo "$CFLAGS" | grep -q -E -e '-Werror($| )'], [], [
 CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
   -pipe \
@@ -70,3 +94,12 @@ Makefile
 validator.spec
 ])
 AC_OUTPUT
+
+echo "
+    validator $VERSION
+    ===============
+
+
+    dracut:                                       $with_dracut
+    man pages:                                    $enable_man
+"

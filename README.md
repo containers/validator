@@ -5,6 +5,10 @@ using a private (Ed25519) key, and then later install these files on
 another system if the signatures are valid. You can also validate the
 files directly.
 
+Validator also ships with a dracut module that makes it very easy
+to install additional files from the initramfs. For example, to add
+dynamic systemd units files to an otherwise read-only rootfs.
+
 # Trivial example
 
 Lets start with some very simple examples. First generate a
@@ -106,6 +110,27 @@ allow the locations to be writable in a non-persistend way. A common
 way to achieve this is to use
 [systemd-volatile-root.service](https://www.freedesktop.org/software/systemd/man/latest/systemd-volatile-root.service.html),
 or configure ostree with [transient /etc](https://ostreedev.github.io/ostree/man/ostree-prepare-root.html).
+
+# Dracut module
+
+Validator ships with the 'validator' dracut module. If this is enabled
+when building an initramfs, then all the install config files from
+`/usr/lib/validator/boot.d` and `/etc/validator/boot.d` will be copied
+into the initramfs, and applied by a custom systemd unit file during
+the initramfs at boot. Additionally, the module will copy any keys
+from `/usr/lib/validator/keys` and `/etc/validator/keys`, which
+the config file can reference.
+
+For example, if you put this in in the `boot.d` directory:
+```
+[install]
+keys=/usr/lib/validator/keys/etc.key
+sources=/sysroot/opt/extra-etc
+destination=/sysroot/etc
+```
+Then any correctly signed files in /opt/extra-etc will be copied
+into /etc during the initramfs. This can include systemd units
+or any other kind of file in /etc.
 
 # Signature details
 
