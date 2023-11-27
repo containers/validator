@@ -15,6 +15,9 @@ common example is a system with a read-only root filesystem, with a
 tmpfs-backed /etc where you want to be able to dynamically add files
 from a limited, controlled set.
 
+Validator also ships with a dracut module that lets you easily install
+files during boot. See **validator-dracut(1)** for details.
+
 # OPTIONS
 
 **validator** accepts the following global options:
@@ -46,6 +49,6 @@ The first argument to **validator** is the command, these are the supported comm
 :   Generate data used for signing files externally
 
 # SEE ALSO
-**validator-sign(1)**, **validator-install(1)** , **validator-validate(1)**, **validator-blob(1)**
+**validator-sign(1)**, **validator-install(1)** , **validator-validate(1)**, **validator-blob(1)**, **validator-dracut(1)**
 
 [validator upstream](https://github.com/containers/validator)

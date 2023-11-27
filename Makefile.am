@@ -12,7 +12,8 @@ MAN1PAGES=\
 	man/validator-sign.md \
 	man/validator-install.md \
 	man/validator-validate.md \
-	man/validator-blob.md
+	man/validator-blob.md \
+	man/validator-dracut.md
 
 MAN5PAGES=\
 	man/validator-config.md
