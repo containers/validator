@@ -168,9 +168,17 @@ operation that copies it into place. Third, validator ships with extra
 tools (such as the dracut module) to make it very easy to integrate
 file integration with system boot.
 
+Another area that differ is the trust model. In some of the systems
+above, a key represent a real-world individual or organization, and
+thare are key distribution and trust mechanisms to help you understand
+who a key represents so you can trust a message from them. However, in
+the typical validator usecase the key represents the target system (or
+class of systems) running validator and that single key is hardcoded
+into those systems.
+
 So, if your usecase does not primarily involve installing validated
-files, you should probably look at these other tools. They are
-fantastic.
+files with a statically known trust model, you should probably look at
+these other tools. They are fantastic.
 
 # Signature details
 
