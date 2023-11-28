@@ -74,7 +74,7 @@ directory:
 $ validator install --key=public.pem -r source/dir dest/dir
 ```
 
-validator also supports signing and validating symlinks, which is
+Validator also supports signing and validating symlinks, which is
 commonly used for configuration:
 
 ```
@@ -89,9 +89,9 @@ Signature of './a-symlink' is invalid (as a-symlink)
 
 # Read-only system usecase
 
-A common usecase for validator is when you have a machine with a
+A common usecase for Validator is when you have a machine with a
 read-only system partition (including /etc), and on top of this you
-want to install extra configuration files that are individaul to each
+want to install extra configuration files that are individual to each
 machine. However you don't want to allow *any* such configuration file
 to be installable, just those from a trusted source.
 
@@ -103,11 +103,11 @@ automatically start at boot. But, if you allow any files to persist in
 rootkit to next boot.
 
 So, instead you install the file in e.g `/var/extra-etc`, and have
-validator validate-and-copy the files into `/etc` the next boot using
+Validator validate-and-copy the files into `/etc` the next boot using
 a trusted public key in the read-only system partition.
 
 For such a setup to work at all, the system must be configured to
-allow the locations to be writable in a non-persistend way. A common
+allow the locations to be writable in a non-persistent way. A common
 way to achieve this is to use
 [systemd-volatile-root.service](https://www.freedesktop.org/software/systemd/man/latest/systemd-volatile-root.service.html),
 or configure ostree with [transient /etc](https://ostreedev.github.io/ostree/man/ostree-prepare-root.html).
@@ -159,21 +159,21 @@ defined after validation, or any code to support it.
 For Validator, however the primary usecase is installing a (validated)
 file into the system, in a particular location (often /etc), with a
 particular name (filenames are critical to config files). To support
-this, Validator adds some extra functionallity (on top of the basic
+this, Validator adds some extra functionality (on top of the basic
 validation). First of all, it signs not just the content, but also the
 filename, as well as the file type (regular file vs
 symlink). Secondly, the primary operation is not "validate", but
 "install" which combines the validation of a source file with the
-operation that copies it into place. Third, validator ships with extra
+operation that copies it into place. Third, Validator ships with extra
 tools (such as the dracut module) to make it very easy to integrate
 file integration with system boot.
 
 Another area that differ is the trust model. In some of the systems
 above, a key represent a real-world individual or organization, and
-thare are key distribution and trust mechanisms to help you understand
+there are key distribution and trust mechanisms to help you understand
 who a key represents so you can trust a message from them. However, in
-the typical validator usecase the key represents the target system (or
-class of systems) running validator and that single key is hardcoded
+the typical Validator usecase the key represents the target system (or
+class of systems) running validator and that single key is hard coded
 into those systems.
 
 So, if your usecase does not primarily involve installing validated
